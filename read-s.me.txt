@@ -1,0 +1,64 @@
+
+1).ipynb-Специальный формат для платформы Jupyter(Anaconda)
+2)Нужно загрузить csv файл "covid_vaccination_doses_per_capita"
+3)Запустить код
+
+
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import plotly.express as px ### для отображения данных на карте мира
+
+
+Предварительная обработка данных
+
+* Убраны лишние столбцы типа «FIPS», «Admin2», «Last_Update» (поскольку все данные за один день — 25 мая).
+* Удаление столбцов «Province_State» и «Combined_Key», поскольку данные по штатам доступны не для всех стран.
+* Группировка данных по «Country_Region» и переименование столбца в «Country».
+
+df.drop(['FIPS', 'Admin2','Last_Update','Province_State', 'Combined_Key'], axis=1, inplace=True)
+df.rename(columns={'Country_Region': "Country"}, inplace=True)
+df.head()
+
+
+Данные  сгруппированы с помощью функции «groupby». 
+world = df.groupby("Country")['Confirmed','Active','Recovered','Deaths'].sum().reset_index()
+world.head(20)
+
+
+
+
+Топ-20 стран с максимальным количеством подтвержденных случаев
+top_20 = world.sort_values(by=['Confirmed'], ascending=False).head(20)
+
+plt.figure(figsize=(12,10))
+plot = sns.barplot(top_20['Confirmed'], top_20['Country'])
+for i,(value,name) in enumerate(zip(top_20['Confirmed'],top_20['Country'])):
+    plot.text(value,i-0.05,f'{value:,.0f}',size=10)
+plt.show()
+
+
+График подтвержденных и активных случаев для 5 основных стран с максимальным количеством подтвержденных случаев
+
+top_5 = world.sort_values(by=['Confirmed'], ascending=False).head()
+### Generate a Barplot
+plt.figure(figsize=(15,5))
+confirmed = sns.barplot(top_5['Confirmed'], top_5['Country'], color = 'red', label='Confirmed')
+recovered = sns.barplot(top_5['Recovered'], top_5['Country'], color = 'green', label='Recovered')
+### Add Texts for Barplots
+for i,(value,name) in enumerate(zip(top_5['Confirmed'],top_5['Country'])):
+    confirmed.text(value,i-0.05,f'{value:,.0f}',size=9)
+for i,(value,name) in enumerate(zip(top_5['Recovered'],top_5['Country'])):
+    recovered.text(value,i-0.05,f'{value:,.0f}',size=9)
+plt.legend(loc=4)
+plt.show()
+
+
+# Нанесение карты Choropleth на карту мира
+# Картограммы позволяют легко визуализировать изменение измерения в географической области или показать уровень изменчивости в пределах региона.
+figure = px.choropleth(world,locations='Country', locationmode='country names', color='Confirmed', hover_name='Country', color_continuous_scale='tealgrn', range_color=[1,1000000],title='Countries with Confirmed cases')
+figure.show()
+
+
